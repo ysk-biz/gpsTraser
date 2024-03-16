@@ -8,7 +8,7 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: "© <a href='https://www.openstreetmap.org/copyright'>OpenStreetMap</a> contributors"
 }).addTo(map);
 
-var mpoint = [36.1772, 137.9547];
+var mpoint = [35.681236, 139.767125];
 map.setView(mpoint, 15);
 // マーカーを初期化
 var marker = L.marker([0, 0]).addTo(map);
