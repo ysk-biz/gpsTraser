@@ -9,10 +9,17 @@
 </head>
 <body>
     <div id="mapcontainer"></div>
-    <input type="file" id="fileInput" accept=".gpx">
+    <div id="sliderValueDisplay">0</div>
+    <div id="sliderContainer">
+        <input type="range" id="distanceSlider" min="0" max="0" disabled><br>
+        <div id="tickContaiener"></div>
+    </div>
+    <input type="file" id="fileInput" accept=".gpx"><br>
+    <label for="fileInput" class="custom-file-upload">ファイルを選択</label><br>
+    <button id="pauseButton" disabled>スタート</button>
 
     <script src="https://unpkg.com/leaflet@1.3.0/dist/leaflet.js"></script>
     <script src="leaflet.js"></script>
-    <script src="gpxTracer.js"></script>
+    <script src="gpxTracerObj.js"></script>
 </body>
 </html>
