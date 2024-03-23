@@ -1,3 +1,72 @@
 #mapcontainer {
-    height: 400px;
+  height: 400px;
+}
+
+#mapInfo{
+  position: absolute;
+  font-size: 16px;
+  background-color: rgba(255, 255, 255, 0.5);
+}
+
+#distanceSlider{
+  margin-top: 100px;
+}
+
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  outline: none;
+  /* background: transparent; 不要なので削除 */
+  cursor: pointer;
+  size: 30px;
+ 
+  /* Track のスタイルを追加 */
+  background: #efafda;  /* Track の背景色 */
+  height: 15px;  /* Track の高さ */
+  border-radius: 8px;  /* Track の角丸 */
+
+  &::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    background: #53aeff;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    box-shadow: 0px 3px 6px 0px rgba(0, 0, 0, 0.15);
+  }
+}
+
+#tickContaiener{
+  margin-left: 12px;
+}
+
+#fileInput {
+  display: none; /* デフォルトのファイル選択ボタンを非表示にします */
+}
+
+.custom-file-upload {
+  border: 1px solid #ccc;
+  display: inline-block;
+  padding: 6px 12px;
+  cursor: pointer;
+  background-color: #f0f0f0;
+  border-radius: 5px;
+  margin-bottom: 20px;
+}
+
+.custom-file-upload:hover {
+  background-color: #e0e0e0;
+}
+
+#pauseButton{
+  border: 1px solid #ccc;
+  display: inline-block;
+  padding: 6px 12px;
+  cursor: pointer;
+  background-color: #f0f0f0;
+  border-radius: 5px;
+  margin-bottom: 20px;
+}
+
+#pauseButton:hover{
+  background-color: #e0e0e0;
 }
