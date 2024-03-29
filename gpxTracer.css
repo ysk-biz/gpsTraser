@@ -2,14 +2,35 @@
   height: 400px;
 }
 
+.startMarker-text {
+  text-align: center; /* テキストを中央揃えにする */
+  line-height: 30px; /* テキストを垂直方向に中央揃えにする */
+  color: white; /* テキストの色を白に設定 */
+}
+.startMarker-icon {
+  background-color: rgba(0, 0, 255, 0.6); 
+  border-radius: 50%; /* アイコンを丸くする */
+}
+
+.goalMarker-text{
+  text-align: center; /* テキストを中央揃えにする */
+  line-height: 30px; /* テキストを垂直方向に中央揃えにする */
+  color: white; /* テキストの色を白に設定 */
+}
+
+.goalMarker-icon{
+  background-color: rgba(255, 0, 0, 0.6); 
+  border-radius: 50%; /* アイコンを丸くする */
+}
+
 #mapInfo{
   position: absolute;
   font-size: 16px;
-  background-color: rgba(255, 255, 255, 0.5);
+  background-color: rgba(255, 255, 255, 0.7);
 }
 
 #distanceSlider{
-  margin-top: 100px;
+  margin-top: 50px;
 }
 
 input[type="range"] {
@@ -45,28 +66,76 @@ input[type="range"] {
 
 .custom-file-upload {
   border: 1px solid #ccc;
-  display: inline-block;
+  display: flex;
   padding: 6px 12px;
   cursor: pointer;
   background-color: #f0f0f0;
   border-radius: 5px;
-  margin-bottom: 20px;
+  /* margin-bottom: 20px; */
+  margin-right: 20px;
 }
 
 .custom-file-upload:hover {
   background-color: #e0e0e0;
 }
 
+.buttonContainer {
+  display: flex;
+  align-items: center;
+}
+
 #pauseButton{
   border: 1px solid #ccc;
   display: inline-block;
-  padding: 6px 12px;
+  padding: 6px 6px;
   cursor: pointer;
   background-color: #f0f0f0;
   border-radius: 5px;
-  margin-bottom: 20px;
+  margin-right: 10px;
+  height: 30px;
+  width: 100px;
 }
 
-#pauseButton:hover{
+.button:hover{
   background-color: #e0e0e0;
 }
+
+#labelSpeedRatio{
+  margin-right: 5px;
+}
+
+.speedInputBox {
+  width: 60px;
+  height: 20px;
+  padding: 5px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  text-align: center;
+}
+
+.speedControlButton-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-left: 10px;
+  transform: scaleY(0.6);
+}
+
+.speedControlButton {
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  padding: 0 0 0 0;
+  text-align: center;
+  
+  
+  /* text-justify: center; */
+  /* line-height: 30px; */
+  /* margin-bottom: 5px; */
+}
+
+.speedControlButton:hover {
+  background-color: #f0f0f0;
+} 
