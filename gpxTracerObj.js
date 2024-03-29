@@ -1,5 +1,6 @@
 class MapMake {
     constructor() {
+        this.stackLapInfoValue = null;
         this.map = L.map('mapcontainer', { zoomControl: false });
         this._mapContainer = document.getElementById('mapcontainer');
         this._mapWidth = this._mapContainer.clientWidth;
@@ -7,14 +8,54 @@ class MapMake {
         this.CurrentInfoContainer = L.DomUtil.create('div');
         this.isMarkerStart = false;
         this.isPaused = false;
+        this.isFinished = false;
         this.CurrentInfo = null;
         this.mapInfoID = null;
+        this.circles = [];
     }
 
     initializeMap(){
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: "© <a href='https://www.openstreetmap.org/copyright'>OpenStreetMap</a> contributors"
         }).addTo(this.map);
+
+        // // カスタムアイコンの定義
+        // var customIcon = L.icon({
+        //     iconUrl: 'markerIcon.png', // アイコンの画像ファイルのパス
+        //     iconSize: [32, 32], // アイコンのサイズ [幅, 高さ]（ピクセル）
+        //     iconAnchor: [16, 32], // アイコンの基準点の位置 [アイコンの幅の半分, アイコンの高さ]
+        //     popupAnchor: [0, -32], // ポップアップがアイコンのどの部分に配置されるか [横方向のオフセット, 縦方向のオフセット]（ピクセル）
+        // });
+
+        // var polygon = L.polygon([
+        //     [35.681236, 139.767125],
+        //     [35.681236-0.001, 139.767125+0.001],
+        //     [35.681236+0.001, 139.767125+0.001]
+        // ], {
+        //     color: 'blue',  // 枠線の色
+        //     fillColor: 'yellow',  // 塗りつぶしの色
+        //     fillOpacity: 0.5,  // 塗りつぶしの透明度
+        //     smoothFactor: 10 
+        // }).addTo(this.map);
+
+        // // ポリゴンの座標
+        // var polygonPoints = [
+        //     [35.681236, 139.767125],
+        //     [35.681236-0.001, 139.767125+0.001],
+        //     [35.681236+0.001, 139.767125+0.001]
+        // ];
+
+        // // ポリゴンを作成
+        // var polygon = L.polygon(polygonPoints, {
+        //     color: 'red',
+        //     fillColor: 'blue',
+        //     fillOpacity: 0.5
+        // });
+        // // レイヤーグループを作成し、ポリゴンを追加
+        // var layerGroup = L.layerGroup().addLayer(polygon).addTo(this.map);
+
+        // // レイヤーグループを回転させる
+        // layerGroup.setTransform('rotate(45deg)');
 
 	    this.map.setView([35.681236, 139.767125], 15);
         this.addCurrentInfo();
@@ -45,16 +86,23 @@ class MapMake {
 
     //markerのイベントを追加する
     addMarkerEvent(){
-        this.markerMoveCenter();
+        this.stackLapInfoValue = parseGPX.stackLapInfoValue;
+        this.setMarkerMoveEvent();
     }
 
+    setMarkerMoveEvent(){
+        if (!this.isPaused){
+            this.marker.on('move', (event) => {
+                if (!this.isPaused){
+                    this.markerMoveCenter()
+                }
+            });
+        }
+    }
+
+
     markerMoveCenter(){
-        // マーカーの移動時に地図の中心を変更する
-        this.marker.on('move', (event) => {
-            if (!this.isPaused){
-                this.map.panTo(this.marker.getLatLng()); // マーカーの位置に地図の中心を設定
-            }
-        });
+        this.map.panTo(this.marker.getLatLng()); // マーカーの位置に地図の中心を設定
     }
 
     setMapView(LatLon, scale){
@@ -72,7 +120,17 @@ class MapMake {
             fillOpacity: 0.5, // 塗りつぶしの透明度
             radius: 10 // 円の半径（ピクセル）
         }).addTo(this.map);
-        this.setPopUp(circle, LapInfo, markerLapIndex)
+        
+        this.setPopUp(circle, LapInfo, markerLapIndex);
+        // this.markerRemove();
+    }
+
+    setMarkerTracePoint(LatLon){
+        var circle = L.circleMarker(LatLon, {
+            color: 'rgba(0, 191, 255, 0.5)', // 線の色
+            fillColor: 'rgba(0, 191, 255, 0.5)', // 塗りつぶしの色
+            radius: 1 // 円の半径（ピクセル）
+        }).addTo(this.map);
     }
 
     setPopUp(circle, LapInfo, markerLapIndex){
@@ -87,11 +145,31 @@ class MapMake {
         }).setContent(popupContent);
 
         circle.bindPopup(popup).openPopup();
+        this.circles.push(circle);
+    }
+
+    markerRemove(){
+        if (this.circles.length > 0){
+            if (gpxTracerUI.slider.value < this.circles.length * 1000){
+                var removedCircle = this.circles[this.circles.length - 1]; // 配列から最初のサークルを取得して削除
+                this.circles.pop();
+                this.map.removeLayer(removedCircle); // 地図からサークルを削除
+                moveMarkerEvent.prevMarkerDistance = this.circles.length * 1000;
+                moveMarkerEvent.markerLapIndex--;
+            }
+        }
+    }
+
+    clearAllMarker(){
+        this.circles.forEach(circle => {
+            this.map.removeLayer(circle);
+        });
+        this.circles = [];
     }
 
     setCurrentInfo(text, width, LatLon){
         this.mapInfoID.innerHTML = text;
-        var margin = 10;
+        var margin = 30;
         this.mapInfoID.style.width = (width + margin) + 'px';
 
         var markerLatLng = LatLon;
@@ -105,20 +183,55 @@ class MapMake {
         this.mapInfoID.style.right = (markerPixelPoint.x - offsetX) + 'px';
     }
 
+    setStartPoint(startLatLon){
+        var customIcon = L.divIcon({
+            className: 'startMarker-icon', // カスタムアイコンのクラス名
+            html: '<div class="startMarker-text">S</div>', // テキストを含むHTML
+            iconSize: [30, 30], // アイコンのサイズ [横幅, 縦幅]（ピクセル）
+            iconAnchor: [15, 30], // アイコンの基準点の位置 [アイコンの横幅の半分, アイコンの縦幅]
+        });
+
+        L.marker(startLatLon, { icon: customIcon }).addTo(this.map);
+    }
+
+    setGoalPoint(goalLatLon){
+        var customIcon = L.divIcon({
+            className: 'goalMarker-icon', // カスタムアイコンのクラス名
+            html: '<div class="goalMarker-text">G</div>', // テキストを含むHTML
+            iconSize: [30, 30], // アイコンのサイズ [横幅, 縦幅]（ピクセル）
+            iconAnchor: [15, 30], // アイコンの基準点の位置 [アイコンの横幅の半分, アイコンの縦幅]
+        });
+
+        L.marker(goalLatLon, { icon: customIcon }).addTo(this.map);
+    }
+
+
 }
 
 
 class GPXTracerUI{
     constructor() {
+        this.moveMarkerEvent = moveMarkerEvent;
+
         this.slider = document.getElementById('distanceSlider');
         this.pauseButton = document.getElementById('pauseButton');
+        this.speedUpButton = document.getElementById('speedUpButton');
+        this.speedDownButton = document.getElementById('speedDownButton');
+        this.speedInputBox = document.getElementById('speedInputBox');
+        
         this.dataAnalysisValue = null;
         this.stackLapInfoValue = null;
+
+        this._markerSpeedRatio = 100;
+        this._speedRatioElement = [1,10,50,100,200,500,1000];
+        this._speedRatioElementIndex = 3;
     }
 
     initialzeUI() {
         this.slider.style.width = mapMake._mapWidth + 'px';
         this.pauseButtonClickEvent();
+        this.speedUpButtonEvent();
+        this.speedDownButtonEvent();
     }
 
     pauseButtonClickEvent(){
@@ -135,9 +248,22 @@ class GPXTracerUI{
     }
 
     markerStartClicked(){
-        mapMake.isMarkerStart = true;
-        this.pauseButton.textContent = '一時停止';
-        moveMarkerEvent.initializeMoveMarker();
+        if (!mapMake.isFinished){
+            mapMake.isMarkerStart = true;
+            this.pauseButton.textContent = '一時停止';
+            moveMarkerEvent.initializeMoveMarker();
+        }
+        else{
+            mapMake.isMarkerStart = true;
+            mapMake.isPaused = false;
+            mapMake.isFinished = false;
+            this.pauseButton.textContent = '一時停止';
+            moveMarkerEvent.dataAnalysisValue = new DataAnalysisValue();
+            mapMake.clearAllMarker();
+            moveMarkerEvent.initializeConstractor();
+            moveMarkerEvent.initializeMoveMarker();
+        }
+        
     }
 
     pauseRestartClicked(){
@@ -174,9 +300,13 @@ class GPXTracerUI{
             var tick = document.createElement('div');
             
             tick = this.setSliderScaleBar(i, tick, sliderValueMax);
-            var text = this.setSlideText(i, tick);
-
-            tick.appendChild(text);
+            
+            // 5kmごとに距離表示
+            if (i % 5000 === 0){
+                var text = this.setSlideText(i, tick);
+                tick.appendChild(text);
+            }
+            
             sliderContainer.appendChild(tick);
         }
 
@@ -223,10 +353,15 @@ class GPXTracerUI{
         this.stackLapInfoValue = parseGPX.stackLapInfoValue;
         
         this.slider.addEventListener('input', () => {
-        var sliderValue = parseInt(this.slider.value); // スライダーの値を取得
-        var latLngIndex = this.stackLapInfoValue.indexDistance[sliderValue];
-        this.setMarkerFromSlider(sliderValue, latLngIndex);
-        this.dataAnalysisValue.totalDistance = sliderValue;
+            var sliderValue = parseInt(this.slider.value); // スライダーの値を取得
+            var latLngIndex = this.stackLapInfoValue.indexDistance[sliderValue];
+            this.setMarkerFromSlider(sliderValue, latLngIndex);
+            this.dataAnalysisValue.totalDistance = sliderValue;
+            this.dataAnalysisValue.totalTime = this.stackLapInfoValue.indexTime[this.dataAnalysisValue.index];
+            this.dataAnalysisValue.prevTime = new Date(parseGPX._trkpts[this.dataAnalysisValue.index-1].
+                                            getElementsByTagName("time")[0].textContent).getTime();
+            mapMake.markerMoveCenter();
+            mapMake.markerRemove();
         });
 
     }
@@ -248,6 +383,36 @@ class GPXTracerUI{
             sliderValue++;
             this.setMarkerFromSlider(sliderValue, latLngIndex);
         }
+        moveMarkerEvent.currentInfoDisplay();
+    }
+
+    compareSliderValue(sign, value){
+        switch (sign) {
+            case '>':
+                return this.slider.value > value;
+            case '<':
+                return this.slider.value < value;
+            default:
+                return false;
+        }
+    }
+
+    speedUpButtonEvent(){
+        this.speedUpButton.addEventListener('click', () => {
+            if (this._speedRatioElementIndex < this._speedRatioElement.length -1 ){
+                this._speedRatioElementIndex ++;
+                this.speedInputBox.value = this._speedRatioElement[this._speedRatioElementIndex];
+            }
+        });
+    }
+
+    speedDownButtonEvent(){
+        this.speedDownButton.addEventListener('click', () => {
+            if (this._speedRatioElementIndex > 0 ){
+                this._speedRatioElementIndex --;
+                this.speedInputBox.value = this._speedRatioElement[this._speedRatioElementIndex];
+            }
+        });
     }
 }
 
@@ -258,6 +423,7 @@ class DataAnalysisValue{
         this.totalTime = 0;
         this.currentLatLon = null;
         this.lastLatLon = null;
+        this.prevTime = null;
     }
 }
 
@@ -268,7 +434,36 @@ class StackLapInfoValue{
         this.previousDistance=0;
         this.previousLapTime = 0;
         this.indexDistance = {};
+        this.indexTime = {};
         this.LapInfo = [];
+    }
+}
+
+class CheckCalcClassValue{
+    constructor(){
+        this.dataAnalysisValue = null;
+        this.stackLapInfoValue = null;
+    }
+
+    classValueReset(){
+        this.dataAnalysisValueReset;
+        this.stackLapInfoValueReset;
+    }
+
+    dataAnalysisValueReset(){
+        this.dataAnalysisValue = new DataAnalysisValue();
+    }
+
+    stackLapInfoValueReset(){
+        this.stackLapInfoValue = new StackLapInfoValue();
+    }
+
+    calcPreviousMarkDistance(sign,value){
+        switch (sign){
+            case '=':
+                this.stackLapInfoValue.prevMarkerDistance = value;
+        }
+        
     }
 }
 
@@ -287,10 +482,14 @@ class ParseGPX{
 	    this._xmlDoc = null;
 	    this._trkpts = null;
 	    this.previousDistance = 0;
+
+        this._totalIndex = 0;
+        this._finishTotalTime = null;
 	    
     }
 
     initializeParseGPX(){
+        checkCalcClassValue.classValueReset();
         this.fileLoaded();
     }
 
@@ -321,16 +520,19 @@ class ParseGPX{
 	    this._trkpts = this._xmlDoc.getElementsByTagName("trkpt");
         this.initialMapDisplay();
         this.dataAnalysis();
+        mapMake.setGoalPoint(this.dataAnalysisValue.currentLatLon);
         gpxTracerUI.setSlider(this.dataAnalysisValue.totalDistance);
     }
 
     initialMapDisplay(){
         var startLat = parseFloat(this._trkpts[0].getAttribute("lat"));
 		var startLon = parseFloat(this._trkpts[0].getAttribute("lon"));
+        this.dataAnalysisValue.prevTime = new Date(this._trkpts[0].getElementsByTagName("time")[0].textContent).getTime();
         this._startLatLon = L.latLng(startLat, startLon);
         this.dataAnalysisValue.lastLatLon = this._startLatLon;
         mapMake.setMapView(this._startLatLon, 15);
         this.initialsetMarker();
+        mapMake.setStartPoint(this._startLatLon);
     }
 
     initialsetMarker(){
@@ -342,12 +544,19 @@ class ParseGPX{
 		this.dataAnalysisEachPoint(this.dataAnalysisValue);
 		this.stackDistancetoLatLon();
 		this.stackLapInfo();
+        this.tracePoint();
+
 		if (this.dataAnalysisValue.index < this._trkpts.length - 1) { 
 			this.dataAnalysis();
 		}
+
+        this._totalIndex = this.dataAnalysisValue.index;
+        this._finishTotalTime = this.dataAnalysisValue.totalTime;
+
     }
 
     dataAnalysisEachPoint(classValue){
+    
         var lat = parseFloat(this._trkpts[classValue.index].getAttribute("lat"));
         var lon = parseFloat(this._trkpts[classValue.index].getAttribute("lon"));
         classValue.currentLatLon = L.latLng(lat, lon); 
@@ -359,6 +568,7 @@ class ParseGPX{
         this.totalTimeCalc(classValue,thisTime);
 
         this.updateGPXData(classValue,thisTime);
+  
     }
 
     totalDistanceCalc(classValue,distance){
@@ -380,6 +590,7 @@ class ParseGPX{
 
     stackDistancetoLatLon(){
         this.stackLapInfoValue.indexDistance[Math.floor(this.dataAnalysisValue.totalDistance)] = this.dataAnalysisValue.index;
+        this.stackLapInfoValue.indexTime[this.dataAnalysisValue.index] = this.dataAnalysisValue.totalTime;
     }
 
     stackLapInfo(){
@@ -406,7 +617,7 @@ class ParseGPX{
     }
 
     checkDistanceEachKM(distance) {
-        return (distance - this.stackLapInfoValue.previousDistance) >= 1000;
+        return distance >= (this.stackLapInfoValue.LapInfo.length+1) * 1000;
     }
 
     stackLapDistance(lapIndex){
@@ -429,10 +640,17 @@ class ParseGPX{
         const valueConverter = new ValueConverter();
         return valueConverter.totalTimeHourMinSecDisplayCalc(thisLapTIme);
     }
+
     checkAndUpdateMinTime(lapIndex,thisLapTIme){
         if (thisLapTIme < this.stackLapInfoValue.minTime){
             this.stackLapInfoValue.minTime = this.getThisLapTime(thisLapTIme);
             this.stackLapInfoValue.minIndex = lapIndex;
+        }
+    }
+
+    tracePoint(){
+        if ((this.dataAnalysisValue.totalDistance - this.stackLapInfoValue.previousDistance) > 10){
+            mapMake.setMarkerTracePoint(this.dataAnalysisValue.currentLatLon);
         }
     }
 }
@@ -447,26 +665,46 @@ class MoveMarkerEvent{
         this.prevMarkerDistance = 0;
     }
 
+    initializeConstractor(){
+        this.dataAnalysisValue = new DataAnalysisValue();
+        this.stackLapInfoValue = parseGPX.stackLapInfoValue;
+        this.valueConverter = new ValueConverter();
+        this.markerLapIndex = 0;
+        this.prevMarkerDistance = 0;
+    }
+
     initializeMoveMarker(){
         this.dataAnalysisValue.lastLatLon = parseGPX._startLatLon;
         this.moveMarker();
     }
 
     moveMarker(){
-        // if (mapMake.isMarkerStart){
-        if (!mapMake.isPaused){
-            parseGPX.dataAnalysisEachPoint(this.dataAnalysisValue);
-            this.currentInfoDisplay();
+        if (mapMake.isMarkerStart){
+            if (!mapMake.isPaused){
+                parseGPX.dataAnalysisEachPoint(this.dataAnalysisValue);
+                this.currentInfoDisplay();
         }
         
         mapMake.setMarker(this.dataAnalysisValue.currentLatLon);
         this.checkandMarckEachKM();
 
         gpxTracerUI.setSliderValue(this.dataAnalysisValue.totalDistance);
+        
+        }
 
         if (this.dataAnalysisValue.index < parseGPX._trkpts.length - 1) { 
-			setTimeout(() => this.moveMarker(), 50); // 0.1秒ごとに更新
+            var markerSpeedRatio = gpxTracerUI.speedInputBox.value;
+            var markerSpeed = ((parseGPX._finishTotalTime / parseGPX._totalIndex) /markerSpeedRatio * 1000).toFixed(0);
+			setTimeout(() => this.moveMarker(), markerSpeed); 
 		}
+        else{
+            mapMake.isPaused = true;
+            mapMake.isMarkerStart = false;
+            mapMake.isFinished = true;
+            gpxTracerUI.pauseButton.textContent = '最初から';
+            setTimeout(() => this.moveMarker(), 50); 
+        }
+    
     }
 
     currentInfoDisplay(){
@@ -490,8 +728,10 @@ class MoveMarkerEvent{
         mapMake.setCurrentInfo(currentInfoText, width, this.dataAnalysisValue.currentLatLon);
 
     }
+
     checkandMarckEachKM(){
-        if (this.dataAnalysisValue.totalDistance - this.prevMarkerDistance >= 1000) {
+        // if (this.dataAnalysisValue.totalDistance - this.prevMarkerDistance >= 1000) {
+        if (this.dataAnalysisValue.totalDistance >= (this.markerLapIndex+1)*1000) {
             mapMake.setMarkerEachKm(this.stackLapInfoValue.LapInfo, this.markerLapIndex);
             this.markerLapIndex++;
             this.prevMarkerDistance = this.dataAnalysisValue.totalDistance;
@@ -520,12 +760,13 @@ class ValueConverter{
 	}
 }
 
-
+const checkCalcClassValue = new CheckCalcClassValue();
 const mapMake = new MapMake();
 const gpxTracerUI = new GPXTracerUI();
 const parseGPX = new ParseGPX();
-const moveMarkerEvent = new MoveMarkerEvent();
+var moveMarkerEvent = new MoveMarkerEvent();
 
+checkCalcClassValue.classValueReset();
 mapMake.initializeMap();
 gpxTracerUI.initialzeUI();
 parseGPX.initializeParseGPX();
