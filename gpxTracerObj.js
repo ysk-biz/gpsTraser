@@ -576,10 +576,10 @@ class ParseGPX{
     }
 
     totalTimeCalc(classValue,thisTime){
-        if ((thisTime - classValue.prevTime) / 1000 < 20){
+        if ((thisTime - classValue.prevTime) / 1000 < 300){
             classValue.totalTime += (thisTime - classValue.prevTime) / 1000;
         }
-        // return this.totalTime
+        return this.totalTime
     }
 
     updateGPXData(classValue, thisTime){
