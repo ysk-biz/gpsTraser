@@ -57,7 +57,7 @@ class MapMake {
         // // レイヤーグループを回転させる
         // layerGroup.setTransform('rotate(45deg)');
 
-	    this.map.setView([35.681236, 139.767125], 13);
+	    this.map.setView([35.681236, 139.767125], 15);
         this.addCurrentInfo();
         this.addMarkerEvent();
     }
