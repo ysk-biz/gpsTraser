@@ -57,7 +57,7 @@ class MapMake {
         // // レイヤーグループを回転させる
         // layerGroup.setTransform('rotate(45deg)');
 
-	    this.map.setView([35.681236, 139.767125], 15);
+	    this.map.setView([35.681236, 139.767125], 13);
         this.addCurrentInfo();
         this.addMarkerEvent();
     }
@@ -223,7 +223,7 @@ class GPXTracerUI{
         this.stackLapInfoValue = null;
 
         this._markerSpeedRatio = 100;
-        this._speedRatioElement = [1,10,50,100,200,500,1000];
+        this._speedRatioElement = [1,10,50,100,200,500,1000,2000,30];
         this._speedRatioElementIndex = 3;
     }
 
